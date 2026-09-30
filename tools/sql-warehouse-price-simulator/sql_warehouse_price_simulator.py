@@ -22,8 +22,8 @@
 # MAGIC
 # MAGIC | | AWS 서울 | Azure Korea Central |
 # MAGIC |---|---|---|
-# MAGIC | 클러스터 구성 | 드라이버 i3 계열(사이즈별) + 워커 i3.2xlarge ([docs](https://docs.databricks.com/aws/en/compute/sql-warehouse/warehouse-behavior#classic-and-pro-sql-warehouses)) | 드라이버 Edsv4 계열(사이즈별) + 워커 Standard_E8ds_v4 ([docs](https://learn.microsoft.com/en-us/azure/databricks/compute/sql-warehouse/warehouse-behavior)) |
-# MAGIC | 디스크 | 노드당 EBS 30GB + 150GB, gp3 기본 성능이라 IOPS·처리량 추가 과금 없음 ([docs](https://docs.databricks.com/aws/en/compute/configure#default-ebs-volumes)) | 노드당 256GB Premium SSD LRS (P15), 시간당 과금 ([docs](https://learn.microsoft.com/en-us/azure/databricks/compute/sql-warehouse/warehouse-behavior)) |
+# MAGIC | 클러스터 구성 | 드라이버 i3 계열(사이즈별) + 워커 i3.2xlarge ([docs](https://docs.databricks.com/aws/en/compute/sql-warehouse/warehouse-behavior#classic-and-pro-sql-warehouses)) | 드라이버 Edsv4 계열(사이즈별) + 워커 Standard_E8ds_v4 ([docs](https://learn.microsoft.com/en-us/azure/databricks/compute/sql-warehouse/warehouse-behavior#classic-and-pro-sql-warehouses)) |
+# MAGIC | 디스크 | 노드당 EBS 30GB + 150GB, gp3 기본 성능이라 IOPS·처리량 추가 과금 없음 ([docs](https://docs.databricks.com/aws/en/compute/configure#default-ebs-volumes)) | 노드당 256GB Premium SSD LRS (P15), 시간당 과금 ([docs](https://learn.microsoft.com/en-us/azure/databricks/compute/sql-warehouse/warehouse-behavior#classic-and-pro-sql-warehouses)) |
 # MAGIC | Edition | Premium · Enterprise (SQL SKU는 동일 단가) | Premium만 |
 # MAGIC | 가격 조회 | AWS 공개 가격 피드 | [Azure Retail Prices API](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices) |
 # MAGIC
@@ -141,7 +141,7 @@ def fetch(url, timeout=10):
 
 
 def load_dbu_prices(cloud, edition, region_sku):
-    """Pick the regional SKU when prices are split by region, else the unsuffixed SKU."""
+    """Pick the regional SKU; regions without a dedicated SKU use the unsuffixed SKU."""
     rows = spark.sql(
         """
         SELECT sku_name, CAST(pricing.default AS DOUBLE) AS usd
@@ -152,16 +152,14 @@ def load_dbu_prices(cloud, edition, region_sku):
         args={"cloud": cloud, "pattern": f"^{edition}_(SQL_COMPUTE|SQL_PRO_COMPUTE|SERVERLESS_SQL_COMPUTE)(_.+)?$"},
     ).collect()
     found = {r.sku_name: r.usd for r in rows}
+    # A wrong region token would silently pick the unsuffixed (US-level) price, so require the region to exist
+    if not any(s.endswith(f"_{region_sku}") for s in found):
+        raise LookupError(f"list_prices({cloud})에 {region_sku} 리전 SKU가 없음")
     prices, names = {}, {}
     for wh_type, base in (("CLASSIC", "SQL_COMPUTE"), ("PRO", "SQL_PRO_COMPUTE"), ("SERVERLESS", "SERVERLESS_SQL_COMPUTE")):
         generic, regional = f"{edition}_{base}", f"{edition}_{base}_{region_sku}"
-        split_by_region = any(s.startswith(generic + "_") for s in found)
-        if regional in found:
-            pick = regional
-        elif generic in found and not split_by_region:
-            pick = generic
-        else:
-            # Never fall back to another region's price
+        pick = regional if regional in found else generic
+        if pick not in found:
             raise LookupError(f"list_prices({cloud})에서 {regional} 또는 리전 공통 {generic}을 찾지 못함")
         prices[wh_type], names[wh_type] = found[pick], pick
     return prices, names
@@ -330,7 +328,8 @@ ax.set_ylabel("USD / month")
 ax.set_title(f"{CLOUD} · {SIZE} · {CLUSTER_HOURS:,.0f} cluster-hours / month")
 ax.legend()
 plt.tight_layout()
-plt.show()
+display(fig)
+plt.close(fig)
 
 # COMMAND ----------
 
@@ -402,8 +401,19 @@ print(f"워크스페이스 {WORKSPACE_ID} · 최근 {LOOKBACK_DAYS}일 · 웨어
 
 MONTH_FACTOR = 30 / LOOKBACK_DAYS
 INFRA_COL = f"인프라 (추정, {VM} + {DISK})"
+
+
+def sku_region(sku):
+    """Region suffix of a SQL SKU ('' when the SKU is not split by region)."""
+    for base in ("SERVERLESS_SQL_COMPUTE", "SQL_PRO_COMPUTE", "SQL_COMPUTE"):  # longest first
+        if f"_{base}" in sku:
+            return sku.split(f"_{base}", 1)[1].lstrip("_")
+    return ""
+
+
 rows = []
 mismatches = []
+other_regions = set()
 for r in usage.itertuples():
     m = meta.get(r.warehouse_id, {"이름": "(삭제됨/조회 불가)", "유형": None, "사이즈": None, "스팟 정책": SPOT_POLICY_DEFAULT})
     actual_type = "SERVERLESS" if "SERVERLESS" in r.sku_name else ("PRO" if "SQL_PRO" in r.sku_name else "CLASSIC")
@@ -413,7 +423,12 @@ for r in usage.itertuples():
     size = m["사이즈"]
     dbu = float(r.dbu)
     dbx = float(r.dbx_cost) if pd.notna(r.dbx_cost) else dbu * P["dbu"][actual_type]
-    known_size = size in DBU_PER_HOUR
+    # Simulator prices are for PROFILE's region only; don't price another region's usage with them
+    region = sku_region(r.sku_name)
+    same_region = region in ("", PROFILE["region_sku"])
+    if not same_region:
+        other_regions.add(region)
+    known_size = size in DBU_PER_HOUR and same_region
     cluster_hours = dbu / DBU_PER_HOUR[size] if known_size else None
     # Serverless rows (or a type change within the lookback) carry no usable spot policy
     spot_policy = m["스팟 정책"] if m["스팟 정책"] in ("COST_OPTIMIZED", "RELIABILITY_OPTIMIZED") else SPOT_POLICY_DEFAULT
@@ -423,7 +438,7 @@ for r in usage.itertuples():
         vm, disk = infra_hourly(size, spot_policy)
         infra = (vm + disk) * cluster_hours
 
-    to_serverless = dbu * P["dbu"]["SERVERLESS"]
+    to_serverless = dbu * P["dbu"]["SERVERLESS"] if same_region else None
     if known_size:
         vm, disk = infra_hourly(size, spot_policy)
         to_pro = dbu * P["dbu"]["PRO"] + (vm + disk) * cluster_hours
@@ -437,8 +452,8 @@ for r in usage.itertuples():
         "DBU": dbu,
         "클러스터-시간": cluster_hours,
         "Databricks (실제)": dbx,
-        INFRA_COL: infra,
-        "합계 (추정)": dbx + infra,
+        INFRA_COL: infra if same_region else None,
+        "합계 (추정)": dbx + infra if same_region or actual_type == "SERVERLESS" else None,
         "Serverless 전환 시": to_serverless,
         "Pro 전환 시": to_pro,
     })
@@ -455,6 +470,9 @@ else:
     monthly[money] = monthly[money].astype(float) * MONTH_FACTOR
     print("월 환산 (USD)")
     display(monthly.round(2))
+    if other_regions:
+        print(f"⚠️ 이 워크스페이스의 청구 SKU 리전({', '.join(sorted(other_regions))})이 시뮬레이터 리전({PROFILE['region_sku']})과 다릅니다. "
+              "Databricks 실제 비용만 표시하고 인프라 추정·전환 비용은 비워 두었습니다.")
     if mismatches:
         print("⚠️ 조회 기간 중 웨어하우스 유형이 변경된 것으로 보입니다 (인프라 추정·전환 비용에 오차 가능):")
         for mm in mismatches:

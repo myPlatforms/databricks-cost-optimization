@@ -62,8 +62,8 @@ Classic / Pro / Serverless SQL Warehouse 비용을 **Databricks(DBU)** 와 **클
 | 사이즈별 DBU/h | 2XS 4 · XS 6 · S 12 · M 24 · L 40 · XL 80 · 2XL 144 · 3XL 272 · 4XL 528, Classic/Pro에도 동일 적용 ([SQL Serverless SKU](https://learn.microsoft.com/en-us/azure/databricks/resources/pricing#sql-serverless-sku)) | 동일 |
 | DBU 단가 (2026-10-01) | Classic $0.22 · Pro $0.74 · Serverless $0.95 | 동일 |
 | Edition | Premium · Enterprise | Premium만 |
-| 클러스터 구성 | 드라이버 i3.2xlarge~i3.16xlarge(사이즈별) + 워커 i3.2xlarge ([docs](https://docs.databricks.com/aws/en/compute/sql-warehouse/warehouse-behavior#classic-and-pro-sql-warehouses)) | 드라이버 Standard_E8ds_v4~E64ds_v4(사이즈별) + 워커 Standard_E8ds_v4 ([docs](https://learn.microsoft.com/en-us/azure/databricks/compute/sql-warehouse/warehouse-behavior)) |
-| 디스크 | 노드당 EBS 30GB + 150GB, gp3 기본 성능이라 IOPS·처리량 추가 과금 없음 ([docs](https://docs.databricks.com/aws/en/compute/configure#default-ebs-volumes)) | 노드당 256GB Premium SSD LRS (P15), 시간당 과금 ([docs](https://learn.microsoft.com/en-us/azure/databricks/compute/sql-warehouse/warehouse-behavior)) |
+| 클러스터 구성 | 드라이버 i3.2xlarge~i3.16xlarge(사이즈별) + 워커 i3.2xlarge ([docs](https://docs.databricks.com/aws/en/compute/sql-warehouse/warehouse-behavior#classic-and-pro-sql-warehouses)) | 드라이버 Standard_E8ds_v4~E64ds_v4(사이즈별) + 워커 Standard_E8ds_v4 ([docs](https://learn.microsoft.com/en-us/azure/databricks/compute/sql-warehouse/warehouse-behavior#classic-and-pro-sql-warehouses)) |
+| 디스크 | 노드당 EBS 30GB + 150GB, gp3 기본 성능이라 IOPS·처리량 추가 과금 없음 ([docs](https://docs.databricks.com/aws/en/compute/configure#default-ebs-volumes)) | 노드당 256GB Premium SSD LRS (P15), 시간당 과금 ([docs](https://learn.microsoft.com/en-us/azure/databricks/compute/sql-warehouse/warehouse-behavior#classic-and-pro-sql-warehouses)) |
 | 스팟 ([SDK `SpotInstancePolicy`](https://databricks-sdk-py.readthedocs.io/en/stable/dbdataclasses/sql.html)) | Cost optimized(기본값) = 드라이버 온디맨드 + 워커 스팟 | **정책과 관계없이 전부 온디맨드** |
 | 인프라 단가 | [EC2 On-Demand](https://aws.amazon.com/ec2/pricing/on-demand/) · [Spot](https://aws.amazon.com/ec2/spot/pricing/) · [EBS](https://aws.amazon.com/ebs/pricing/) | [Azure Retail Prices API](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices) (Linux 종량제, P15 LRS) |
 
@@ -81,6 +81,7 @@ Azure는 스팟이 없어서 Pro가 항상 Serverless보다 약 17% 높습니다
 
 - **AWS 서울 · Azure Korea Central 전용**입니다. 다른 리전은 노트북 상단 `PROFILES`의 리전 값과 `fallback` 단가를 바꿔야 합니다.
 - DBU 단가는 **리전 전용 SKU**를 찾고, 리전 구분이 없는 SKU만 있을 때 그것을 씁니다. 다른 리전 단가로는 대체하지 않으며, 찾지 못하면 내장 점검값을 씁니다.
+- 워크스페이스의 청구 SKU 리전이 시뮬레이터 리전과 다르면(예: Azure US West 2 워크스페이스), 실측 비교에서 **Databricks 실제 비용만** 표시하고 인프라 추정·전환 비용은 비워 둡니다. AWS 전용 버전(`_AWS`)에는 이 검사가 없으므로 서울 리전 워크스페이스에서만 쓰세요.
 - 실측 비교의 인프라 비용은 **추정치**입니다. 가동 클러스터-시간을 `DBU ÷ 사이즈별 DBU/h`로 역산하므로, 조회 기간 중 사이즈나 유형을 바꾸면 오차가 생깁니다 (유형 변경은 경고로 표시).
 - 전환 비용은 같은 클러스터-시간을 쓴다고 가정합니다. Serverless는 기동이 빠르고 auto-stop을 짧게 잡을 수 있어 실제 가동 시간이 줄어드는 경우가 많습니다.
 - 모든 금액은 **list price** 기준입니다. 미반영: NAT·데이터 전송, 오브젝트 스토리지, 클러스터 기동 소요 시간, RI/Savings Plan·Databricks 약정 할인, 부가세.
