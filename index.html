@@ -222,6 +222,10 @@
   .wip-banner { background: #FFF7ED; border: 1px solid #FFD6A5; color: #C2590A; border-radius: 10px; padding: 12px 20px; font-size: 15px; font-weight: 500; }
   .styled-table.compact td { padding: 8px 18px; }
   .styled-table.compact th { padding: 10px 18px; }
+  .tool-btn { position: fixed; top: 16px; right: 112px; z-index: 200; padding: 8px 16px; background: #FF3621; border: 1px solid #FF3621; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; font-family: 'Noto Sans KR', sans-serif; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .tool-btn:hover { background: #E02E1A; }
+  .toc-item.ext::after { content: " ↗"; }
+  @media print { .tool-btn { display: none !important; } }
   .src { font-size: 13px; color: #888; margin-top: auto; padding-top: 14px; }
   .src a { color: #1B6ACB; text-decoration: none; }
   .p-num { font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #FF3621; }
@@ -234,6 +238,7 @@
 <body>
 
 <!-- TOC Sidebar -->
+<button class="tool-btn" onclick="goToSlide(9)" title="SQL Warehouse 가격 시뮬레이터">&#128295; 참고 툴</button>
 <button class="toc-toggle" onclick="toggleTOC()">&#9776; 목차</button>
 <div class="toc-sidebar" id="tocSidebar">
   <div class="toc-header">
@@ -250,8 +255,9 @@
     <a class="toc-item" onclick="goToSlide(6)">② 리소스 동적 할당</a>
     <a class="toc-item" onclick="goToSlide(7)">③ 비용 모니터링·통제</a>
     <a class="toc-item" onclick="goToSlide(8)">④ 비용 효율적 워크로드 설계</a>
-    <div class="toc-group">참고 예제</div>
+    <div class="toc-group">참고 툴</div>
     <a class="toc-item" onclick="goToSlide(9)">SQL Warehouse 가격 시뮬레이터</a>
+    <a class="toc-item ext" href="https://github.com/myPlatforms/databricks-cost-optimization/tree/main/tools/sql-warehouse-price-simulator" target="_blank">GitHub에서 노트북 열기</a>
     <a class="toc-item" onclick="goToSlide(10)">원문 링크</a>
   </div>
 </div>
@@ -265,7 +271,7 @@
   <div class="tag-row">
     <span class="tag tag-orange">개선 중</span>
     <span class="tag tag-blue">공식 문서 요약</span>
-    <span class="tag tag-green">참고 예제 포함</span>
+    <span class="tag tag-green">참고 툴 포함</span>
   </div>
 </div>
 <!-- ================= SLIDE 2: 이 페이지에 대해 ================= -->
@@ -279,7 +285,7 @@
         <div class="card-label">지금 볼 수 있는 것</div>
         <ul>
           <li>Databricks 공식 <strong>비용 최적화 4원칙</strong>과 원칙별 실천 방법 요약</li>
-          <li>참고 예제: <strong>SQL Warehouse 가격 시뮬레이터</strong> 노트북</li>
+          <li>참고 툴: <strong>SQL Warehouse 가격 시뮬레이터</strong> 노트북</li>
         </ul>
       </div>
       <div class="card card-blue">
@@ -407,7 +413,7 @@
 </div>
 <!-- ================= SLIDE 9: SQL Warehouse 가격 시뮬레이터 ================= -->
 <div id="slide-9" class="slide"><div class="slide-header"><div class="logo"><span class="dot"></span>Databricks 비용 최적화</div><div class="page-num">09</div></div>
-  <div class="section-title">참고 예제 · SQL Warehouse 가격 시뮬레이터</div>
+  <div class="section-title">참고 툴 · SQL Warehouse 가격 시뮬레이터</div>
   <div class="section-subtitle">"DBU 단가만 보면 Classic이 싸다"는 착시 — AWS 비용까지 더해서 비교합니다</div>
   <div class="content-body">
     <div class="two-col">
@@ -427,7 +433,7 @@
           <li><code>system.billing.usage</code>로 기존 웨어하우스의 실제 비용과 전환 시 비용 비교</li>
         </ul>
         <p style="margin-top:6px;"><a href="https://github.com/myPlatforms/databricks-cost-optimization/tree/main/tools/sql-warehouse-price-simulator" target="_blank"><strong>GitHub에서 노트북 보기 →</strong></a></p>
-        <p class="note">참고 예제입니다. 견적·청구 금액을 보장하지 않으며 계약 단가·약정 할인은 반영하지 않습니다.</p>
+        <p class="note">참고용 툴입니다. 견적·청구 금액을 보장하지 않으며 계약 단가·약정 할인은 반영하지 않습니다.</p>
       </div>
     </div>
   </div>
@@ -440,7 +446,7 @@
   <ul class="link-list" style="text-align:left;">
     <li><a href="https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/" target="_blank">Cost optimization for Databricks</a></li>
     <li><a href="https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/best-practices" target="_blank">Best practices for cost optimization</a></li>
-    <li><a href="https://github.com/myPlatforms/databricks-cost-optimization/tree/main/tools/sql-warehouse-price-simulator" target="_blank">SQL Warehouse 가격 시뮬레이터 (참고 예제)</a></li>
+    <li><a href="https://github.com/myPlatforms/databricks-cost-optimization/tree/main/tools/sql-warehouse-price-simulator" target="_blank">SQL Warehouse 가격 시뮬레이터 (참고 툴)</a></li>
   </ul>
 </div>
 
@@ -470,7 +476,7 @@
 
   function updateTOC() {
     document.querySelectorAll('.toc-item').forEach(function(item) {
-      var m = item.getAttribute('onclick').match(/goToSlide\((\d+)\)/);
+      var m = (item.getAttribute('onclick') || '').match(/goToSlide\((\d+)\)/);
       item.classList.toggle('active', (m ? parseInt(m[1]) : -1) === current);
     });
   }

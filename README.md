@@ -1,6 +1,6 @@
 # Databricks 비용 최적화
 
-Databricks 공식 비용 최적화 문서의 한국어 요약과 참고 예제를 모아 둔 페이지입니다. GitHub Pages로 서빙됩니다.
+Databricks 공식 비용 최적화 문서의 한국어 요약과 참고 툴을 모아 둔 페이지입니다. GitHub Pages로 서빙됩니다.
 
 **주소**: https://myplatforms.github.io/databricks-cost-optimization/
 
@@ -12,11 +12,15 @@ Databricks 공식 비용 최적화 문서의 한국어 요약과 참고 예제�
   - [Cost optimization for Databricks](https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/)
   - [Best practices for cost optimization](https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/best-practices)
 
-## 참고 예제
+## 참고 툴
 
-| 예제 | 설명 |
-|---|---|
-| [SQL Warehouse 가격 시뮬레이터](tools/sql-warehouse-price-simulator/) | Classic / Pro / Serverless 비용을 Databricks(DBU)와 AWS(EC2 + EBS)로 나눠 비교하는 노트북 (AWS 서울) |
+페이지 오른쪽 위 **참고 툴** 버튼과 목차의 "참고 툴" 그룹에서도 열 수 있습니다.
+
+| 툴 | 설명 | 형식 | 대상 |
+|---|---|---|---|
+| [SQL Warehouse 가격 시뮬레이터](tools/sql-warehouse-price-simulator/) | Classic / Pro / Serverless 비용을 Databricks(DBU)와 AWS(EC2 + EBS)로 나눠 비교 | Databricks 노트북 | AWS 서울 |
+
+새 툴은 `tools/<툴 이름>/` 폴더에 README와 함께 추가하고, 이 표와 페이지의 "참고 툴" 그룹에 등록합니다.
 
 ## 로컬 미리보기
 
