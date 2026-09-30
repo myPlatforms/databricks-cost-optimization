@@ -414,7 +414,7 @@
 <!-- ================= SLIDE 9: SQL Warehouse 가격 시뮬레이터 ================= -->
 <div id="slide-9" class="slide"><div class="slide-header"><div class="logo"><span class="dot"></span>Databricks 비용 최적화</div><div class="page-num">09</div></div>
   <div class="section-title">참고 툴 · SQL Warehouse 가격 시뮬레이터</div>
-  <div class="section-subtitle">"DBU 단가만 보면 Classic이 싸다"는 착시 — AWS 비용까지 더해서 비교합니다</div>
+  <div class="section-subtitle">"DBU 단가만 보면 Classic이 싸다"는 착시 — 클라우드 인프라 비용까지 더해서 비교합니다</div>
   <div class="content-body">
     <div class="two-col">
       <div>
@@ -428,8 +428,9 @@
       <div class="card card-accent">
         <div class="card-label">노트북으로 직접 계산</div>
         <ul>
-          <li>Classic / Pro / Serverless 비용을 <strong>Databricks(DBU)</strong>와 <strong>AWS(EC2 + EBS)</strong>로 나눠 비교</li>
-          <li>단가는 <code>system.billing.list_prices</code>와 AWS 공개 가격 피드에서 실시간 조회 (폐쇄망이면 내장 점검값)</li>
+          <li>Classic / Pro / Serverless 비용을 <strong>Databricks(DBU)</strong>와 <strong>클라우드 인프라(VM + 디스크)</strong>로 나눠 비교</li>
+          <li><strong>AWS 서울 · Azure Korea Central</strong> 지원 (워크스페이스로 자동 판별). Azure는 스팟이 없어 Pro가 Serverless보다 약 17% 높습니다</li>
+          <li>단가는 <code>system.billing.list_prices</code>와 클라우드 공개 가격 API에서 실시간 조회 (폐쇄망이면 내장 점검값)</li>
           <li><code>system.billing.usage</code>로 기존 웨어하우스의 실제 비용과 전환 시 비용 비교</li>
         </ul>
         <p style="margin-top:6px;"><a href="https://github.com/myPlatforms/databricks-cost-optimization/tree/main/tools/sql-warehouse-price-simulator" target="_blank"><strong>GitHub에서 노트북 보기 →</strong></a></p>

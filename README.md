@@ -18,7 +18,7 @@ Databricks 공식 비용 최적화 문서의 한국어 요약과 참고 툴을 �
 
 | 툴 | 설명 | 형식 | 대상 |
 |---|---|---|---|
-| [SQL Warehouse 가격 시뮬레이터](tools/sql-warehouse-price-simulator/) | Classic / Pro / Serverless 비용을 Databricks(DBU)와 AWS(EC2 + EBS)로 나눠 비교 | Databricks 노트북 | AWS 서울 |
+| [SQL Warehouse 가격 시뮬레이터](tools/sql-warehouse-price-simulator/) | Classic / Pro / Serverless 비용을 Databricks(DBU)와 클라우드 인프라(VM + 디스크)로 나눠 비교. 통합 버전 + AWS 전용 버전(`_AWS`) | Databricks 노트북 | AWS 서울 · Azure Korea Central |
 
 새 툴은 `tools/<툴 이름>/` 폴더에 README와 함께 추가하고, 이 표와 페이지의 "참고 툴" 그룹에 등록합니다.
 
