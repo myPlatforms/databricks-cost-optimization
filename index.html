@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Databricks 비용 최적화 — 공식 문서 요약 (개선 중)</title>
+<link rel="icon" type="image/png" href="https://www.databricks.com/en-website-assets/favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans KR', -apple-system, sans-serif;
+    background: #f5f5f5;
+    color: #1a1a1a;
+  }
+
+  .slide {
+    width: 100vw;
+    min-height: 100vh;
+    padding: 60px 80px 80px;
+    display: none;
+    flex-direction: column;
+    background: #ffffff;
+    position: relative;
+    overflow: hidden;
+  }
+  .slide.active { display: flex; }
+
+  .slide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 18px;
+    border-bottom: 3px solid #FF3621;
+    margin-bottom: 34px;
+  }
+  .slide-header .logo {
+    font-size: 14px; font-weight: 700; color: #FF3621;
+    letter-spacing: 1px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 9px;
+  }
+  .logo .dot { width: 14px; height: 14px; background: #FF3621; border-radius: 3px; display: inline-block; }
+  .slide-header .page-num { font-size: 14px; color: #999; font-weight: 500; }
+
+  /* Title slide */
+  .title-slide {
+    justify-content: center; align-items: center; text-align: center;
+    background: linear-gradient(135deg, #ffffff 0%, #f7f5f4 50%, #f0edeb 100%);
+  }
+  .title-slide .brand {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 30px;
+    font-size: 20px; font-weight: 900; letter-spacing: 1px; color: #1a1a1a;
+  }
+  .title-slide .brand .dot { width: 22px; height: 22px; background: #FF3621; border-radius: 5px; }
+  .title-slide .main-title {
+    font-size: 54px; font-weight: 900; color: #1a1a1a;
+    margin-bottom: 16px; letter-spacing: -1.5px; line-height: 1.15;
+  }
+  .title-slide .main-title span { color: #FF3621; }
+  .title-slide .subtitle { font-size: 24px; font-weight: 300; color: #555; margin-bottom: 36px; }
+  .title-slide .meta { font-size: 17px; color: #999; font-weight: 400; }
+  .title-slide .tag-row { display: flex; gap: 12px; margin-top: 30px; flex-wrap: wrap; justify-content: center; }
+
+  .tag { padding: 8px 20px; border-radius: 100px; font-size: 14px; font-weight: 500; }
+  .tag-red { background: #FFF0EE; color: #FF3621; border: 1px solid #FFD4CC; }
+  .tag-blue { background: #EEF4FF; color: #1B6ACB; border: 1px solid #C4DAFF; }
+  .tag-green { background: #EEFBF3; color: #0F7B3F; border: 1px solid #B8E8CC; }
+  .tag-orange { background: #FFF7ED; color: #C2590A; border: 1px solid #FFD6A5; }
+  .tag-purple { background: #F5F0FF; color: #6B3FA0; border: 1px solid #D4C4F0; }
+
+  /* Section divider */
+  .section-divider {
+    justify-content: center;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2b2b2b 100%);
+    color: #fff;
+  }
+  .section-divider .kicker {
+    font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+    color: #FF6B4A; margin-bottom: 18px;
+  }
+  .section-divider .sd-title { font-size: 52px; font-weight: 900; letter-spacing: -1px; line-height: 1.2; }
+  .section-divider .sd-sub { font-size: 20px; font-weight: 300; color: #bbb; margin-top: 18px; max-width: 760px; }
+  .section-divider .sd-num {
+    position: absolute; top: 50px; right: 80px; font-size: 130px; font-weight: 900;
+    color: rgba(255,54,33,0.16); line-height: 1;
+  }
+
+  .section-title { font-size: 38px; font-weight: 900; color: #1a1a1a; margin-bottom: 6px; letter-spacing: -0.5px; }
+  .section-subtitle { font-size: 19px; font-weight: 300; color: #777; margin-bottom: 30px; }
+
+  .content-body { flex: 1; display: flex; flex-direction: column; gap: 22px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; flex: 1; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px; flex: 1; }
+  .four-col { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+
+  .card {
+    background: #fafafa; border: 1px solid #e8e8e8; border-radius: 16px;
+    padding: 24px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .card-accent { border-left: 4px solid #FF3621; background: #FFFAF9; }
+  .card-blue { border-left: 4px solid #1B6ACB; background: #FAFCFF; }
+  .card-green { border-left: 4px solid #0F7B3F; background: #FAFFFC; }
+  .card-orange { border-left: 4px solid #C2590A; background: #FFFCFA; }
+  .card-purple { border-left: 4px solid #6B3FA0; background: #FCFAFF; }
+  .card h3 { font-size: 19px; font-weight: 700; color: #1a1a1a; }
+  .card p, .card li { font-size: 15.5px; line-height: 1.65; color: #444; }
+  .card ul { padding-left: 20px; }
+  .card ul li { margin-bottom: 5px; }
+  .card .card-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #FF3621; }
+  .card-label-blue { color: #1B6ACB !important; }
+  .card-label-green { color: #0F7B3F !important; }
+  .card-label-orange { color: #C2590A !important; }
+  .card-label-purple { color: #6B3FA0 !important; }
+
+  .big-num { font-size: 44px; font-weight: 900; color: #FF3621; line-height: 1; }
+  .big-num-blue { color: #1B6ACB; }
+
+  /* Flow */
+  .flow-horizontal { display: flex; align-items: center; gap: 0; justify-content: center; flex-wrap: wrap; }
+  .flow-box { background: #fff; border: 2px solid #e0e0e0; border-radius: 12px; padding: 18px 22px; text-align: center; min-width: 150px; }
+  .flow-box h4 { font-size: 15px; font-weight: 700; color: #1a1a1a; margin-bottom: 5px; }
+  .flow-box p { font-size: 13px; color: #666; line-height: 1.4; }
+  .flow-box.red { border-color: #FF3621; background: #FFF5F3; }
+  .flow-box.blue { border-color: #1B6ACB; background: #F5F8FF; }
+  .flow-box.green { border-color: #0F7B3F; background: #F3FCF6; }
+  .flow-box.purple { border-color: #6B3FA0; background: #F9F5FF; }
+  .flow-arrow { font-size: 28px; color: #ccc; padding: 0 10px; font-weight: 300; }
+
+  /* Table */
+  .styled-table { width: 100%; border-collapse: collapse; font-size: 15.5px; }
+  .styled-table th { background: #FF3621; color: #fff; padding: 13px 18px; text-align: left; font-weight: 700; font-size: 14.5px; }
+  .styled-table td { padding: 12px 18px; border-bottom: 1px solid #eee; color: #333; line-height: 1.5; }
+  .styled-table tr:nth-child(even) { background: #fafafa; }
+  .styled-table .hl { background: #FFF0EE; font-weight: 600; color: #FF3621; }
+  .styled-table td .muted { color: #999; font-size: 13px; }
+
+  /* Highlight / insight */
+  .highlight-box {
+    background: #FFF5F3; border: 2px solid #FF3621; border-radius: 12px;
+    padding: 20px 28px; font-size: 17px; font-weight: 500; color: #333; line-height: 1.6; text-align: center;
+  }
+  .highlight-box strong { color: #FF3621; }
+  .insight { background: #FFFBE6; border: 1px solid #FFD700; border-radius: 10px; padding: 15px 22px; font-size: 15.5px; color: #664D00; font-weight: 500; }
+  .insight::before { content: "KEY INSIGHT"; display: block; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: #B8860B; margin-bottom: 6px; }
+  .note { font-size: 13px; color: #888; margin-top: 4px; }
+  .note a, .card a { color: #1B6ACB; text-decoration: none; }
+
+  .badge { display: inline-block; padding: 3px 11px; border-radius: 100px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge-ga { background: #E8FFE5; color: #0F7B3F; }
+  .badge-beta { background: #FFF7ED; color: #C2590A; }
+  .badge-new { background: #FFE8E5; color: #FF3621; }
+
+  .clean-list { list-style: none; padding: 0; }
+  .clean-list li { font-size: 17px; line-height: 1.55; padding: 7px 0 7px 24px; position: relative; color: #333; }
+  .clean-list li::before { content: ""; position: absolute; left: 0; top: 15px; width: 9px; height: 9px; border-radius: 50%; background: #FF3621; }
+
+  /* VS block */
+  .vs-block { display: grid; grid-template-columns: 1fr auto 1fr; gap: 24px; align-items: stretch; flex: 1; }
+  .vs-divider { font-size: 32px; font-weight: 900; color: #ddd; align-self: center; }
+
+  /* Relative cost / stacked bars for TCO */
+  .tco-block { display: flex; gap: 60px; justify-content: center; align-items: flex-end; padding: 10px 0; }
+  .tco-col { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 200px; }
+  .tco-bar { width: 130px; border-radius: 8px 8px 0 0; display: flex; flex-direction: column; justify-content: flex-end; }
+  .tco-seg { color: #fff; font-weight: 700; font-size: 14px; text-align: center; padding: 8px 0; }
+  .tco-seg.vm { background: #9aa0a6; }
+  .tco-seg.dbu { background: #FF3621; border-radius: 8px 8px 0 0; }
+  .tco-total { font-size: 26px; font-weight: 900; color: #1a1a1a; }
+  .tco-label { font-size: 16px; font-weight: 700; color: #555; }
+
+  /* Checklist grid */
+  .check-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .check-cat { background: #fafafa; border: 1px solid #e8e8e8; border-radius: 14px; padding: 20px; }
+  .check-cat h4 { font-size: 15px; font-weight: 800; color: #FF3621; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #FFE0DA; }
+  .check-cat ul { list-style: none; padding: 0; }
+  .check-cat li { font-size: 14px; line-height: 1.5; padding: 4px 0 4px 22px; position: relative; color: #444; }
+  .check-cat li::before { content: "\2713"; position: absolute; left: 0; color: #0F7B3F; font-weight: 800; }
+
+  /* Maturity journey */
+  .maturity { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; padding: 30px 0 10px; position: relative; }
+  .mat-step { flex: 1; text-align: center; }
+  .mat-bar { background: linear-gradient(180deg,#FF6B4A,#FF3621); border-radius: 8px 8px 0 0; margin: 0 6px; }
+  .mat-label { font-size: 14px; font-weight: 700; color: #1a1a1a; margin-top: 10px; }
+  .mat-arrow { position: absolute; bottom: -6px; left: 0; right: 0; height: 3px; background: #e0e0e0; }
+
+  .slide::after { content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #FF3621, #FF6B4A); }
+
+  /* Print */
+  @media print {
+    body { background: #fff; }
+    .slide { display: flex !important; page-break-after: always; page-break-inside: avoid; min-height: 100vh; padding: 40px 60px; position: relative; overflow: hidden; }
+    .slide:last-of-type { page-break-after: auto; }
+    .nav-bar, .toc-toggle, .toc-sidebar { display: none !important; }
+    .slide::after { position: absolute; }
+  }
+
+  /* Navigation */
+  .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #eee; padding: 11px 40px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+  .nav-btn { padding: 9px 26px; border: 2px solid #FF3621; background: #fff; color: #FF3621; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; font-family: 'Noto Sans KR', sans-serif; transition: all 0.2s; }
+  .nav-btn:hover { background: #FF3621; color: #fff; }
+  .nav-progress { font-size: 14px; color: #999; font-weight: 500; }
+
+  /* TOC */
+  .toc-toggle { position: fixed; top: 16px; right: 16px; z-index: 200; padding: 8px 16px; background: #fff; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; font-family: 'Noto Sans KR', sans-serif; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .toc-toggle:hover { background: #f5f5f5; }
+  .toc-sidebar { position: fixed; top: 0; right: -340px; width: 320px; height: 100vh; background: #fff; border-left: 1px solid #e0e0e0; box-shadow: -4px 0 20px rgba(0,0,0,0.08); z-index: 300; transition: right 0.3s ease; display: flex; flex-direction: column; overflow-y: auto; }
+  .toc-sidebar.open { right: 0; }
+  .toc-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 3px solid #FF3621; font-size: 18px; font-weight: 700; color: #1a1a1a; }
+  .toc-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #999; padding: 4px 8px; }
+  .toc-close:hover { color: #333; }
+  .toc-list { padding: 12px 0; flex: 1; }
+  .toc-group { font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #FF3621; padding: 14px 24px 4px; }
+  .toc-item { display: block; padding: 8px 24px; font-size: 13.5px; color: #555; cursor: pointer; transition: all 0.15s; border-left: 3px solid transparent; text-decoration: none; }
+  .toc-item:hover { background: #f8f8f8; color: #FF3621; }
+  .toc-item.active { background: #FFF5F3; color: #FF3621; border-left-color: #FF3621; font-weight: 600; }
+
+  /* Landing additions */
+  .wip-banner { background: #FFF7ED; border: 1px solid #FFD6A5; color: #C2590A; border-radius: 10px; padding: 12px 20px; font-size: 15px; font-weight: 500; }
+  .styled-table.compact td { padding: 8px 18px; }
+  .styled-table.compact th { padding: 10px 18px; }
+  .src { font-size: 13px; color: #888; margin-top: auto; padding-top: 14px; }
+  .src a { color: #1B6ACB; text-decoration: none; }
+  .p-num { font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #FF3621; }
+  .link-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  .link-list li { font-size: 17px; }
+  .link-list a { color: #1B6ACB; text-decoration: none; font-weight: 600; }
+  .link-list .desc { display: block; font-size: 14px; color: #777; font-weight: 400; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<!-- TOC Sidebar -->
+<button class="toc-toggle" onclick="toggleTOC()">&#9776; 목차</button>
+<div class="toc-sidebar" id="tocSidebar">
+  <div class="toc-header">
+    <span>목차</span>
+    <button class="toc-close" onclick="toggleTOC()">&#x2715;</button>
+  </div>
+  <div class="toc-list" id="tocList">
+    <a class="toc-item active" onclick="goToSlide(1)">표지</a>
+    <a class="toc-item" onclick="goToSlide(2)">이 페이지에 대해</a>
+    <div class="toc-group">공식 문서 요약</div>
+    <a class="toc-item" onclick="goToSlide(3)">비용 최적화 4원칙</a>
+    <a class="toc-item" onclick="goToSlide(4)">① 최적 리소스 — 엔진 선택</a>
+    <a class="toc-item" onclick="goToSlide(5)">① 최적 리소스 — Serverless·인스턴스·사이징</a>
+    <a class="toc-item" onclick="goToSlide(6)">② 리소스 동적 할당</a>
+    <a class="toc-item" onclick="goToSlide(7)">③ 비용 모니터링·통제</a>
+    <a class="toc-item" onclick="goToSlide(8)">④ 비용 효율적 워크로드 설계</a>
+    <div class="toc-group">참고 예제</div>
+    <a class="toc-item" onclick="goToSlide(9)">SQL Warehouse 가격 시뮬레이터</a>
+    <a class="toc-item" onclick="goToSlide(10)">원문 링크</a>
+  </div>
+</div>
+
+<!-- ================= SLIDE 1: 표지 ================= -->
+<div id="slide-1" class="slide active title-slide">
+  <div class="brand"><span class="dot"></span>DATABRICKS</div>
+  <div class="main-title">Databricks <span>비용 최적화</span></div>
+  <div class="subtitle">공식 문서 요약 · 상세 가이드는 개선 중입니다</div>
+  <div class="meta">기준: Databricks 공식 문서 (2026-10-01 확인)</div>
+  <div class="tag-row">
+    <span class="tag tag-orange">개선 중</span>
+    <span class="tag tag-blue">공식 문서 요약</span>
+    <span class="tag tag-green">참고 예제 포함</span>
+  </div>
+</div>
+<!-- ================= SLIDE 2: 이 페이지에 대해 ================= -->
+<div id="slide-2" class="slide"><div class="slide-header"><div class="logo"><span class="dot"></span>Databricks 비용 최적화</div><div class="page-num">02</div></div>
+  <div class="section-title">이 페이지에 대해</div>
+  <div class="section-subtitle">상세 가이드를 보강하는 동안, 공식 문서의 핵심을 한국어로 요약해 둡니다</div>
+  <div class="content-body">
+    <div class="wip-banner">상세 가이드는 내용을 보강하고 있습니다. 준비가 끝나면 이 주소에서 교체해 공개합니다.</div>
+    <div class="two-col">
+      <div class="card card-accent">
+        <div class="card-label">지금 볼 수 있는 것</div>
+        <ul>
+          <li>Databricks 공식 <strong>비용 최적화 4원칙</strong>과 원칙별 실천 방법 요약</li>
+          <li>참고 예제: <strong>SQL Warehouse 가격 시뮬레이터</strong> 노트북</li>
+        </ul>
+      </div>
+      <div class="card card-blue">
+        <div class="card-label card-label-blue">읽을 때 참고</div>
+        <ul>
+          <li>이 요약은 공식 문서를 옮겨 정리한 <strong>비공식 한국어 요약</strong>입니다. 정확한 내용은 원문을 확인하세요</li>
+          <li>제품명·기능명은 원문 표기를 따릅니다</li>
+        </ul>
+      </div>
+    </div>
+    <ul class="link-list">
+      <li><a href="https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/" target="_blank">Cost optimization for Databricks</a><span class="desc">비용 최적화 원칙 (Lakehouse architecture · Well-architected)</span></li>
+      <li><a href="https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/best-practices" target="_blank">Best practices for cost optimization</a><span class="desc">원칙별 실천 방법</span></li>
+    </ul>
+  </div>
+</div>
+<!-- ================= SLIDE 3: 비용 최적화 4원칙 ================= -->
+<div id="slide-3" class="slide"><div class="slide-header"><div class="logo"><span class="dot"></span>Databricks 비용 최적화</div><div class="page-num">03</div></div>
+  <div class="section-title">비용 최적화 4원칙</div>
+  <div class="section-subtitle">주어진 예산으로 최대 가치를 — 비용 효율은 비즈니스 목표와 ROI에서 출발합니다</div>
+  <div class="content-body">
+    <div class="four-col">
+      <div class="card card-accent"><div class="p-num">01</div><h3>최적 리소스 선택</h3><p>비즈니스 목표와 워크로드 성능에 맞는 리소스를 고릅니다. 새 워크로드는 배포 옵션을 비교해 <strong>가격 대비 성능</strong>이 가장 좋은 것을 선택합니다.</p></div>
+      <div class="card card-blue"><div class="p-num" style="color:#1B6ACB">02</div><h3>리소스 동적 할당</h3><p>성능 요구에 맞춰 할당하고 해제합니다. <strong>유휴·저활용 리소스</strong>는 찾아서 재구성·통합하거나 끕니다.</p></div>
+      <div class="card card-green"><div class="p-num" style="color:#0F7B3F">03</div><h3>비용 모니터링·통제</h3><p>비용 = 소비량 × 단가. 리소스별로 모니터링해 기준선을 만들고, 워크로드 소유자에게 비용을 배분해 <strong>ROI</strong>를 측정합니다.</p></div>
+      <div class="card card-purple"><div class="p-num" style="color:#6B3FA0">04</div><h3>비용 효율적 워크로드 설계</h3><p>사용량·성능 지표로 시작 규모를 정하고 <strong>오토스케일링</strong>을 씁니다. 변동이 큰 워크로드는 작은 인스턴스로, scale-up보다 <strong>scale-out</strong>을 우선합니다.</p></div>
+    </div>
+    <div class="highlight-box">네 원칙은 한 번으로 끝나지 않습니다 — 규모 확대·신규 프로젝트·비용 급증 때마다 <strong>다시 점검하는 지속적 과정</strong>입니다</div>
+  </div>
+  <div class="src">출처: <a href="https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/" target="_blank">Cost optimization for Databricks</a></div>
+</div>
+<!-- ================= SLIDE 4: ① 최적 리소스 — 엔진 선택 ================= -->
+<div id="slide-4" class="slide"><div class="slide-header"><div class="logo"><span class="dot"></span>Databricks 비용 최적화</div><div class="page-num">04</div></div>
+  <div class="section-title">① 최적 리소스 선택 — 워크로드에 맞는 엔진</div>
+  <div class="section-subtitle">같은 작업도 어떤 컴퓨트에서 돌리느냐에 따라 비용이 크게 달라집니다</div>
+  <div class="content-body">
+    <div class="three-col">
+      <div class="card card-accent"><h3>Delta Lake</h3><p>Parquet·ORC·JSON보다 빠른 성능 최적화 형식. Job compute라면 실행 시간 단축이 곧 비용 절감입니다.</p></div>
+      <div class="card card-accent"><h3>Job compute</h3><p>비대화형 작업은 All-purpose보다 <strong>훨씬 저렴</strong>합니다. 멀티태스크 잡은 태스크 간 컴퓨트를 재사용해 기동 시간이 한 번만 듭니다.</p></div>
+      <div class="card card-accent"><h3>SQL Warehouse</h3><p>대화형 SQL에 가장 비용 효율적인 엔진. <strong>Photon 기본</strong>, Serverless는 IWM(intelligent workload management)으로 대량 쿼리를 빠르게 처리합니다.</p></div>
+      <div class="card card-blue"><h3>최신 런타임</h3><p>정기 릴리스마다 성능이 개선되고, 효율이 좋아진 만큼 비용이 줄어드는 경우가 많습니다.</p></div>
+      <div class="card card-blue"><h3>GPU는 필요한 곳에만</h3><p>GPU 가속 라이브러리를 쓰는 워크로드가 아니면 이득이 없습니다. 관리자가 GPU 인스턴스를 제한할 수 있습니다.</p></div>
+      <div class="card card-blue"><h3>Photon 평가</h3><p>코드 수정 없이 켜는 벡터화 엔진. 정기 잡은 <strong>더 빠른지뿐 아니라 더 싼지</strong>도 확인합니다.</p></div>
+    </div>
+  </div>
+  <div class="src">출처: <a href="https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/best-practices" target="_blank">Best practices for cost optimization — 1. Choose optimal resources</a></div>
+</div>
+<!-- ================= SLIDE 5: ① 최적 리소스 — Serverless·인스턴스·사이징 ================= -->
+<div id="slide-5" class="slide"><div class="slide-header"><div class="logo"><span class="dot"></span>Databricks 비용 최적화</div><div class="page-num">05</div></div>
+  <div class="section-title">① 최적 리소스 선택 — Serverless · 인스턴스 · 사이징</div>
+  <div class="section-subtitle">기동이 빠르면 유휴 시간에 과감히 끌 수 있습니다</div>
+  <div class="content-body">
+    <div class="two-col">
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card card-accent">
+          <div class="card-label">Serverless · BI</div>
+          <p>Non-serverless SQL Warehouse는 기동에 수 분이 걸려 유휴 시간에도 켜 두는 경우가 많습니다. Serverless는 <strong>수 초 안에 기동·확장</strong>하므로 즉시 응답과 유휴 종료를 함께 얻고, 축소도 더 일찍 합니다.</p>
+        </div>
+        <div class="card card-accent">
+          <div class="card-label">Serverless · Model Serving</div>
+          <p>요청량 변화에 맞춰 자동으로 확장·축소해 인프라 비용을 줄이면서 지연 시간을 유지합니다.</p>
+        </div>
+        <div class="insight">최신 세대 인스턴스(예: Graviton)는 대부분 가격 대비 성능이 더 좋습니다. 컴퓨트 정책으로 T-shirt 사이즈(Small·Medium·Large)를 표준화하세요.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <table class="styled-table compact">
+          <tr><th>인스턴스 패밀리</th><th>맞는 워크로드</th></tr>
+          <tr><td>Memory optimized</td><td>ML, 셔플·스필이 많은 작업</td></tr>
+          <tr><td>Compute optimized</td><td>Structured Streaming, OPTIMIZE·VACUUM</td></tr>
+          <tr><td>Storage optimized</td><td>캐싱이 유리한 애드혹·대화형 분석</td></tr>
+          <tr><td>GPU optimized</td><td>특정 ML·DL</td></tr>
+          <tr><td>General purpose</td><td>특별한 요구가 없을 때</td></tr>
+        </table>
+        <table class="styled-table compact">
+          <tr><th>배포 시 사이징 표준</th><th>시작점</th></tr>
+          <tr><td>개발·테스트</td><td>싱글 노드 또는 워커 2~4 + 오토스케일</td></tr>
+          <tr><td>배치 ETL</td><td>워커 8~16, 메모리 최적화 + 오토스케일</td></tr>
+          <tr><td>스트리밍</td><td>워커 4~8 + 오토스케일</td></tr>
+          <tr><td>SQL Warehouse</td><td>Small / Medium부터, 동시 사용자·쿼리 복잡도로 조정</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="src">출처: <a href="https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/best-practices" target="_blank">Best practices for cost optimization — 1. Choose optimal resources</a></div>
+</div>
+<!-- ================= SLIDE 6: ② 리소스 동적 할당 ================= -->
+<div id="slide-6" class="slide"><div class="slide-header"><div class="logo"><span class="dot"></span>Databricks 비용 최적화</div><div class="page-num">06</div></div>
+  <div class="section-title">② 리소스 동적 할당</div>
+  <div class="section-subtitle">쓰는 만큼만 켜고, 안 쓰면 끈다</div>
+  <div class="content-body">
+    <div class="two-col">
+      <div class="card card-blue"><h3>오토스케일링</h3><p>계산량이 많은 구간에만 워커를 늘리고 끝나면 줄입니다. 고정 크기보다 전체 비용이 낮아집니다.</p><p class="note">Structured Streaming은 축소에 제약이 있어 <strong>Lakeflow pipelines의 enhanced autoscaling</strong>을 권장합니다.</p></div>
+      <div class="card card-blue"><h3>Auto termination</h3><p>모든 대화형 컴퓨트에 유휴 종료를 설정합니다. 업무 시간에만 쓴다면 아침에 스케줄로 재기동하고 <strong>CACHE SELECT</strong>로 데이터를 미리 올려 둡니다.</p></div>
+      <div class="card card-blue"><h3>Pool</h3><p>기동이 너무 길면 유휴 인스턴스 풀을 씁니다. 풀에서 대기하는 인스턴스에는 <strong>DBU가 청구되지 않지만</strong>, 클라우드 인스턴스 비용은 발생합니다.</p></div>
+      <div class="card card-blue"><h3>컴퓨트 정책</h3><ul><li>오토스케일 + 최소 워커 수</li><li>합리적인 auto termination (예: 1시간)</li><li>비용 효율적인 인스턴스만 허용</li><li>스팟 인스턴스 전략 적용</li></ul></div>
+    </div>
+  </div>
+  <div class="src">출처: <a href="https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/best-practices" target="_blank">Best practices for cost optimization — 2. Dynamically allocate resources</a></div>
+</div>
+<!-- ================= SLIDE 7: ③ 비용 모니터링·통제 ================= -->
+<div id="slide-7" class="slide"><div class="slide-header"><div class="logo"><span class="dot"></span>Databricks 비용 최적화</div><div class="page-num">07</div></div>
+  <div class="section-title">③ 비용 모니터링·통제</div>
+  <div class="section-subtitle">설정(Setup) → 모니터링(Monitoring) → 관리(Management)</div>
+  <div class="content-body">
+    <div class="three-col">
+      <div class="card card-green"><div class="card-label card-label-green">Setup</div><h3>태깅은 처음부터</h3><ul><li>최소 <strong>Business Units · Projects</strong>, 필요하면 <strong>Environment</strong></li><li>워크스페이스·클러스터·SQL Warehouse·풀에 태그 → 사용 로그와 클라우드 리소스로 전파</li><li>태그는 <strong>과거 사용분에 소급할 수 없어</strong> 처음에 넉넉히 설계</li></ul></div>
+      <div class="card card-green"><div class="card-label card-label-green">Monitoring</div><h3>예산과 가시성</h3><ul><li>Budgets + 이메일 알림, <strong>usage policy</strong>로 Serverless 사용량 귀속</li><li>계정 콘솔 비용 관리 AI/BI 대시보드</li><li><code>system.billing.usage</code> 시스템 테이블</li><li>OpenSharing egress 비용 모니터링</li><li>Account REST API로 사용량 CSV 다운로드</li></ul></div>
+      <div class="card card-green"><div class="card-label card-label-green">Management</div><h3>조직 차원의 관리</h3><ul><li>태그를 적용·정리하는 housekeeping 잡 (변경은 감사 로그로)</li><li>정기 비용 감사, 월간 비용 리포트 공유</li><li>팀별 비용 영향 교육</li><li>컴퓨트 정책으로 유형·크기 통제</li></ul></div>
+    </div>
+    <div class="highlight-box">총비용 = <strong>DBU + VM · 디스크 · 네트워크</strong> — 단, Serverless는 VM 비용이 이미 DBU에 포함됩니다</div>
+  </div>
+  <div class="src">출처: <a href="https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/best-practices" target="_blank">Best practices for cost optimization — 3. Monitor and control cost</a></div>
+</div>
+<!-- ================= SLIDE 8: ④ 비용 효율적 워크로드 설계 ================= -->
+<div id="slide-8" class="slide"><div class="slide-header"><div class="logo"><span class="dot"></span>Databricks 비용 최적화</div><div class="page-num">08</div></div>
+  <div class="section-title">④ 비용 효율적 워크로드 설계</div>
+  <div class="section-subtitle">요구사항이 실제로 요구하는 만큼만</div>
+  <div class="content-body">
+    <div class="two-col">
+      <div class="card card-purple"><div class="card-label card-label-purple">Streaming</div><h3>상시 실행 vs 트리거 실행</h3><p>실시간 수집이라도 분석에 필요한 신선도가 몇 시간·하루 단위라면, 하루 몇 번 실행으로 충분합니다. 24시간 켜 둘 이유가 없습니다.</p><p>저지연이 필요 없는 증분 작업은 Structured Streaming의 <strong>AvailableNow 트리거</strong>(증분 배치)를 권장합니다.</p></div>
+      <div class="card card-purple"><div class="card-label card-label-purple">Spot</div><h3>온디맨드 vs 스팟</h3><p>스팟은 클라우드의 여유 자원을 싸게 쓰는 방식입니다. <strong>첫 인스턴스(드라이버)는 항상 온디맨드</strong>로 두고, 스팟 회수로 조금 늦어져도 괜찮은 워크로드에 씁니다.</p><p><strong>Fleet 인스턴스 타입</strong>을 쓰면 가격과 가용성이 가장 좋은 물리 인스턴스를 Databricks가 골라 줍니다.</p></div>
+    </div>
+  </div>
+  <div class="src">출처: <a href="https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/best-practices" target="_blank">Best practices for cost optimization — 4. Design cost-effective workloads</a></div>
+</div>
+<!-- ================= SLIDE 9: SQL Warehouse 가격 시뮬레이터 ================= -->
+<div id="slide-9" class="slide"><div class="slide-header"><div class="logo"><span class="dot"></span>Databricks 비용 최적화</div><div class="page-num">09</div></div>
+  <div class="section-title">참고 예제 · SQL Warehouse 가격 시뮬레이터</div>
+  <div class="section-subtitle">"DBU 단가만 보면 Classic이 싸다"는 착시 — AWS 비용까지 더해서 비교합니다</div>
+  <div class="content-body">
+    <div class="two-col">
+      <div>
+        <div class="tco-block">
+          <div class="tco-col"><div class="tco-total">$13.38</div><div class="tco-bar"><div class="tco-seg dbu" style="height:178px;">DBU 8.88</div><div class="tco-seg vm" style="height:90px;">AWS 4.50</div></div><div class="tco-label">Pro · 온디맨드</div></div>
+          <div class="tco-col"><div class="tco-total">$11.35</div><div class="tco-bar"><div class="tco-seg dbu" style="height:178px;">DBU 8.88</div><div class="tco-seg vm" style="height:49px;">AWS 2.47</div></div><div class="tco-label">Pro · 스팟</div></div>
+          <div class="tco-col"><div class="tco-total">$11.40</div><div class="tco-bar"><div class="tco-seg dbu" style="height:228px;">DBU 11.40</div></div><div class="tco-label">Serverless</div></div>
+        </div>
+        <p class="note" style="text-align:center;">Small · 1시간 · 클러스터 1개 · AWS 서울 list price (2026-10-01) · AWS = EC2 + EBS</p>
+      </div>
+      <div class="card card-accent">
+        <div class="card-label">노트북으로 직접 계산</div>
+        <ul>
+          <li>Classic / Pro / Serverless 비용을 <strong>Databricks(DBU)</strong>와 <strong>AWS(EC2 + EBS)</strong>로 나눠 비교</li>
+          <li>단가는 <code>system.billing.list_prices</code>와 AWS 공개 가격 피드에서 실시간 조회 (폐쇄망이면 내장 점검값)</li>
+          <li><code>system.billing.usage</code>로 기존 웨어하우스의 실제 비용과 전환 시 비용 비교</li>
+        </ul>
+        <p style="margin-top:6px;"><a href="https://github.com/myPlatforms/databricks-cost-optimization/tree/main/tools/sql-warehouse-price-simulator" target="_blank"><strong>GitHub에서 노트북 보기 →</strong></a></p>
+        <p class="note">참고 예제입니다. 견적·청구 금액을 보장하지 않으며 계약 단가·약정 할인은 반영하지 않습니다.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ================= SLIDE 10: 원문 링크 ================= -->
+<div id="slide-10" class="slide title-slide">
+  <div class="brand"><span class="dot"></span>DATABRICKS</div>
+  <div class="main-title">원문에서 <span>더 보기</span></div>
+  <div class="subtitle">상세 가이드는 준비가 끝나는 대로 이 주소에서 공개합니다</div>
+  <ul class="link-list" style="text-align:left;">
+    <li><a href="https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/" target="_blank">Cost optimization for Databricks</a></li>
+    <li><a href="https://docs.databricks.com/aws/en/lakehouse-architecture/cost-optimization/best-practices" target="_blank">Best practices for cost optimization</a></li>
+    <li><a href="https://github.com/myPlatforms/databricks-cost-optimization/tree/main/tools/sql-warehouse-price-simulator" target="_blank">SQL Warehouse 가격 시뮬레이터 (참고 예제)</a></li>
+  </ul>
+</div>
+
+<!-- Navigation -->
+<div class="nav-bar">
+  <button class="nav-btn" onclick="prevSlide()">&#x25C0;&nbsp; 이전</button>
+  <span class="nav-progress" id="progress">1 / 10</span>
+  <button class="nav-btn" onclick="nextSlide()">다음 &nbsp;&#x25B6;</button>
+</div>
+
+<script>
+  let current = 1;
+  const total = 10;
+
+  function showSlide(n) {
+    document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+    document.getElementById('slide-' + n).classList.add('active');
+    document.getElementById('progress').textContent = n + ' / ' + total;
+    current = n;
+    updateTOC();
+  }
+  function nextSlide() { if (current < total) showSlide(current + 1); }
+  function prevSlide() { if (current > 1) showSlide(current - 1); }
+  function goToSlide(n) { showSlide(n); closeTOC(); }
+  function toggleTOC() { document.getElementById('tocSidebar').classList.toggle('open'); }
+  function closeTOC() { document.getElementById('tocSidebar').classList.remove('open'); }
+
+  function updateTOC() {
+    document.querySelectorAll('.toc-item').forEach(function(item) {
+      var m = item.getAttribute('onclick').match(/goToSlide\((\d+)\)/);
+      item.classList.toggle('active', (m ? parseInt(m[1]) : -1) === current);
+    });
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowLeft' || e.key === 'Backspace') { e.preventDefault(); prevSlide(); }
+    if (e.key === 'Escape') { closeTOC(); }
+  });
+</script>
+</body>
+</html>
